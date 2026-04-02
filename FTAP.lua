@@ -76,16 +76,27 @@ MainTab:AddToggle({
     end    
 })
 
-MainTab:AddToggle({
-    Name = "Finist Spiderman",
-    Default = false,
-    Callback = function(Value)
-        spidermanActive = Value
-        if not Value then
-            cleanupSpiderman()
-        end
-    end    
+-- Keybind for Spiderman
+MainTab:AddBind({
+	Name = "Finist Spiderman",
+	Default = Enum.KeyCode.K,
+	Hold = false,
+	Callback = function()
+		spidermanActive = not spidermanActive
+		if not spidermanActive then
+			cleanupSpiderman()
+		end
+		
+		-- Optional: Notifies you of the current state
+		OrionLib:MakeNotification({
+			Name = "Spiderman Mode",
+			Content = spidermanActive and "Enabled" or "Disabled",
+			Image = "rbxassetid://4483345998",
+			Time = 2
+		})
+	end    
 })
+
 MainTab:AddToggle({
    Name = "Massless Grab (PLAYER & OBJECT)",
    Default = false,
