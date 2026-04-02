@@ -86,6 +86,42 @@ MainTab:AddToggle({
         end
     end    
 })
+MainTab:AddToggle({
+   Name = "Massless Grab (PLAYER & OBJECT)",
+   Default = false,
+   Callback = function(v)
+       if v then
+           Massless = workspace.ChildAdded:Connect(function(r)
+               if r.Name == "GrabParts" then
+                   while workspace:FindFirstChild("GrabParts") do
+                       task.wait()
+                       local dp = r:FindFirstChild("DragPart")
+                       if dp and dp:FindFirstChild("AlignPosition") and dp:FindFirstChild("AlignOrientation") then
+                           dp.AlignPosition.Responsiveness = Sense
+                           dp.AlignPosition.MaxForce = math.huge
+                           dp.AlignPosition.MaxVelocity = math.huge
+                           dp.AlignOrientation.Responsiveness = Sense
+                           dp.AlignOrientation.MaxTorque = math.huge
+                       end
+                   end
+               end
+           end)
+       else
+           if Massless then Massless:Disconnect() Massless = nil end
+       end
+   end,
+})
+
+-- THE EXACT MASSLESS SENSE INPUT (Orion Port)
+MainTab:AddTextbox({
+   Name = "Massless Sense",
+   Default = tostring(Sense),
+   TextDisappear = false,
+   Callback = function(Text)
+       local v = tonumber(Text)
+       if v and v > 0 then Sense = v end
+   end,
+})
 
 -- MAIN ENGINE
 local hue = 0
