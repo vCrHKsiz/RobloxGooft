@@ -13,7 +13,16 @@ local Window = OrionLib:MakeWindow({
 
 local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998"})
 
--- Variables
+--variables
+local aimbotEnabled = false
+local aimSmoothness = 5 
+local aimDistance = 100 
+local whitelistFriends = true
+local customWhitelist = {} 
+local lastMousePos = game:GetService("UserInputService"):GetMouseLocation()
+local flickPause = false
+local Massless = nil -- In case you didn't define it globally
+local Sense = 30 -- Default sense
 local trueFinistActive = false
 local realColorActive = false
 local spidermanActive = false
@@ -134,6 +143,61 @@ MainTab:AddTextbox({
    end,
 })
 
+local AimTab = Window:MakeTab({Name = "Aimbot", Icon = "rbxassetid://4483345998"})
+
+AimTab:AddToggle({
+    Name = "Finist Auto-Lock",
+    Default = false,
+    Callback = function(Value) aimbotEnabled = Value end
+})
+
+AimTab:AddToggle({
+    Name = "Whitelist Friends",
+    Default = true,
+    Callback = function(Value) whitelistFriends = Value end
+})
+
+local WhitelistDisplay = AimTab:AddDropdown({
+	Name = "Whitelisted Players",
+	Default = "None",
+	Options = {"None"},
+	Callback = function() end
+})
+
+AimTab:AddTextbox({
+	Name = "Add to Whitelist",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(Text)
+		if Text ~= "" then
+			table.insert(customWhitelist, Text)
+			WhitelistDisplay:Refresh(customWhitelist, true)
+		end
+	end	  
+})
+
+AimTab:AddButton({
+	Name = "Clear Whitelist",
+	Callback = function()
+		customWhitelist = {}
+		WhitelistDisplay:Refresh({"None"}, true)
+	end
+})
+
+AimTab:AddSlider({
+    Name = "Lock Smoothness",
+    Min = 1, Max = 50, Default = 5,
+    Increment = 1, ValueName = "Smooth",
+    Callback = function(Value) aimSmoothness = Value end
+})
+
+AimTab:AddSlider({
+    Name = "Lock Range (Studs)",
+    Min = 10, Max = 500, Default = 100,
+    Increment = 5, ValueName = "Studs",
+    Callback = function(Value) aimDistance = Value end
+})
+
 -- MAIN ENGINE
 local hue = 0
 RunService.RenderStepped:Connect(function()
@@ -192,6 +256,57 @@ RunService.RenderStepped:Connect(function()
         end
     else
         colorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
+    end
+end)
+
+
+-- --- AIMBOT ENGINE ---
+local function isCurrentlyGrabbing()
+    if workspace:FindFirstChild("GrabParts") then return true end
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= Player and v.Character and v.Character:FindFirstChild("Head") then
+            local ownerValue = v.Character.Head:FindFirstChild("PartOwner")
+            if ownerValue and ownerValue.Value == Player.Name then return true end
+        end
+    end
+    return false
+end
+
+local function getTarget()
+    if isCurrentlyGrabbing() or flickPause then return nil end
+    local closestTarget, shortestDistance = nil, aimDistance
+    for _, v in pairs(game.Players:GetPlayers()) do
+        local isFriend = (whitelistFriends and Player:IsFriendsWith(v.UserId))
+        local isManualWhitelisted = false
+        for _, name in pairs(customWhitelist) do
+            if string.find(string.lower(v.Name), string.lower(name)) then isManualWhitelisted = true break end
+        end
+        if v ~= Player and not isFriend and not isManualWhitelisted and v.Character then
+            local arm = v.Character:FindFirstChild("LeftLowerArm") or v.Character:FindFirstChild("Left Arm")
+            if arm and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                local _, onScreen = Camera:WorldToViewportPoint(arm.Position)
+                if onScreen then
+                    local dist = (Player.Character.HumanoidRootPart.Position - arm.Position).Magnitude
+                    if dist < shortestDistance then closestTarget = arm shortestDistance = dist end
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+RunService:BindToRenderStep("FinistAimbot", Enum.RenderPriority.Camera.Value + 1, function()
+    local currentMousePos = game:GetService("UserInputService"):GetMouseLocation()
+    if (currentMousePos - lastMousePos).Magnitude > 45 then
+        flickPause = true task.delay(0.3, function() flickPause = false end)
+    end
+    lastMousePos = currentMousePos
+    if aimbotEnabled then
+        local target = getTarget()
+        if target then
+            local lookAt = CFrame.new(Camera.CFrame.Position, target.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / math.max(aimSmoothness, 1.1))
+        end
     end
 end)
 
