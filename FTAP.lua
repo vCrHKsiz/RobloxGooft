@@ -13,7 +13,7 @@ local Window = OrionLib:MakeWindow({
 
 local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998"})
 
---variables
+
 local aimbotEnabled = false
 local aimSmoothness = 5 
 local aimDistance = 100 
@@ -21,8 +21,8 @@ local whitelistFriends = true
 local customWhitelist = {} 
 local lastMousePos = game:GetService("UserInputService"):GetMouseLocation()
 local flickPause = false
-local Massless = nil -- In case you didn't define it globally
-local Sense = 30 -- Default sense
+local Massless = nil 
+local Sense = 30 -- Default s
 local trueFinistActive = false
 local realColorActive = false
 local spidermanActive = false
@@ -35,7 +35,7 @@ colorCorrection.Name = "FinistCC"
 local blur = Lighting:FindFirstChild("FinistBlur") or Instance.new("BlurEffect", Lighting)
 blur.Name = "FinistBlur"
 
--- Helper Function: Cleanup Spiderman
+
 local function cleanupSpiderman()
     if currentWeld then
         currentWeld:Destroy()
@@ -57,7 +57,7 @@ local function cleanupSpiderman()
     end
 end
 
--- FOV Slider
+
 MainTab:AddSlider({
     Name = "FOV Customizer",
     Min = 30, Max = 200, Default = 70,
@@ -65,7 +65,7 @@ MainTab:AddSlider({
     Callback = function(Value) Camera.FieldOfView = Value end    
 })
 
--- Toggles
+
 MainTab:AddToggle({
     Name = "True Finist",
     Default = false,
@@ -85,7 +85,7 @@ MainTab:AddToggle({
     end    
 })
 
--- Keybind for Spiderman
+
 MainTab:AddBind({
 	Name = "Finist Spiderman",
 	Default = Enum.KeyCode.K,
@@ -96,7 +96,7 @@ MainTab:AddBind({
 			cleanupSpiderman()
 		end
 		
-		-- Optional: Notifies you of the current state
+		
 		OrionLib:MakeNotification({
 			Name = "Spiderman Mode",
 			Content = spidermanActive and "Enabled" or "Disabled",
@@ -132,7 +132,7 @@ MainTab:AddToggle({
    end,
 })
 
--- THE EXACT MASSLESS SENSE INPUT (Orion Port)
+
 MainTab:AddTextbox({
    Name = "Massless Sense",
    Default = tostring(Sense),
@@ -198,7 +198,7 @@ AimTab:AddSlider({
     Callback = function(Value) aimDistance = Value end
 })
 
--- MAIN ENGINE
+
 local hue = 0
 RunService.RenderStepped:Connect(function()
     local character = Player.Character
@@ -206,7 +206,7 @@ RunService.RenderStepped:Connect(function()
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     local animate = character and character:FindFirstChild("Animate")
 
-    -- 1. ADVANCED SPIDERMAN LOGIC
+   
     if spidermanActive and root and humanoid then
         if not currentWeld then
             local params = RaycastParams.new()
@@ -216,12 +216,12 @@ RunService.RenderStepped:Connect(function()
             local result = workspace:Raycast(root.Position, Vector3.new(0, -7, 0), params)
             
             if result and result.Instance and result.Instance:IsA("BasePart") then
-                -- Disable Movement
+              
                 humanoid.AutoRotate = false
                 humanoid:ChangeState(Enum.HumanoidStateType.Physics)
                 if animate then animate.Disabled = true end
-                
-                -- Create Weld
+
+					
                 currentWeld = Instance.new("WeldConstraint")
                 currentWeld.Name = "FinistSpidermanWeld"
                 currentWeld.Part0 = root
@@ -231,7 +231,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- 2. Skybox & Rainbow Logic
+    
     if trueFinistActive or realColorActive then
         local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
         sky.SkyboxBk = emojiId; sky.SkyboxDn = emojiId; sky.SkyboxFt = emojiId
@@ -260,7 +260,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 
--- --- AIMBOT ENGINE ---
+
 local function isCurrentlyGrabbing()
     if workspace:FindFirstChild("GrabParts") then return true end
     for _, v in pairs(game.Players:GetPlayers()) do
