@@ -13,7 +13,6 @@ local Window = OrionLib:MakeWindow({
 
 local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998"})
 
-
 local aimbotEnabled = false
 local aimSmoothness = 5 
 local aimDistance = 100 
@@ -22,7 +21,7 @@ local customWhitelist = {}
 local lastMousePos = game:GetService("UserInputService"):GetMouseLocation()
 local flickPause = false
 local Massless = nil 
-local Sense = 30 -- Default s
+local Sense = 30 
 local trueFinistActive = false
 local realColorActive = false
 local spidermanActive = false
@@ -34,7 +33,6 @@ colorCorrection.Name = "FinistCC"
 
 local blur = Lighting:FindFirstChild("FinistBlur") or Instance.new("BlurEffect", Lighting)
 blur.Name = "FinistBlur"
-
 
 local function cleanupSpiderman()
     if currentWeld then
@@ -57,14 +55,12 @@ local function cleanupSpiderman()
     end
 end
 
-
 MainTab:AddSlider({
     Name = "FOV Customizer",
     Min = 30, Max = 200, Default = 70,
     Increment = 1, ValueName = "FOV",
     Callback = function(Value) Camera.FieldOfView = Value end    
 })
-
 
 MainTab:AddToggle({
     Name = "True Finist",
@@ -85,7 +81,6 @@ MainTab:AddToggle({
     end    
 })
 
-
 MainTab:AddBind({
 	Name = "Finist Spiderman",
 	Default = Enum.KeyCode.K,
@@ -95,7 +90,6 @@ MainTab:AddBind({
 		if not spidermanActive then
 			cleanupSpiderman()
 		end
-		
 		
 		OrionLib:MakeNotification({
 			Name = "Spiderman Mode",
@@ -132,7 +126,6 @@ MainTab:AddToggle({
    end,
 })
 
-
 MainTab:AddTextbox({
    Name = "Massless Sense",
    Default = tostring(Sense),
@@ -145,10 +138,18 @@ MainTab:AddTextbox({
 
 local AimTab = Window:MakeTab({Name = "Aimbot", Icon = "rbxassetid://4483345998"})
 
-AimTab:AddToggle({
+AimTab:AddBind({
     Name = "Finist Auto-Lock",
-    Default = false,
-    Callback = function(Value) aimbotEnabled = Value end
+    Default = Enum.KeyCode.G,
+    Hold = false,
+    Callback = function()
+        aimbotEnabled = not aimbotEnabled
+        OrionLib:MakeNotification({
+            Name = "Aimbot",
+            Content = aimbotEnabled and "Locked On" or "Unlocked",
+            Time = 2
+        })
+    end
 })
 
 AimTab:AddToggle({
@@ -173,7 +174,7 @@ AimTab:AddTextbox({
 			table.insert(customWhitelist, Text)
 			WhitelistDisplay:Refresh(customWhitelist, true)
 		end
-	end	  
+	end     
 })
 
 AimTab:AddButton({
@@ -198,7 +199,6 @@ AimTab:AddSlider({
     Callback = function(Value) aimDistance = Value end
 })
 
-
 local hue = 0
 RunService.RenderStepped:Connect(function()
     local character = Player.Character
@@ -206,7 +206,6 @@ RunService.RenderStepped:Connect(function()
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     local animate = character and character:FindFirstChild("Animate")
 
-   
     if spidermanActive and root and humanoid then
         if not currentWeld then
             local params = RaycastParams.new()
@@ -216,12 +215,10 @@ RunService.RenderStepped:Connect(function()
             local result = workspace:Raycast(root.Position, Vector3.new(0, -7, 0), params)
             
             if result and result.Instance and result.Instance:IsA("BasePart") then
-              
                 humanoid.AutoRotate = false
                 humanoid:ChangeState(Enum.HumanoidStateType.Physics)
                 if animate then animate.Disabled = true end
 
-					
                 currentWeld = Instance.new("WeldConstraint")
                 currentWeld.Name = "FinistSpidermanWeld"
                 currentWeld.Part0 = root
@@ -231,7 +228,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    
     if trueFinistActive or realColorActive then
         local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
         sky.SkyboxBk = emojiId; sky.SkyboxDn = emojiId; sky.SkyboxFt = emojiId
@@ -258,8 +254,6 @@ RunService.RenderStepped:Connect(function()
         colorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
     end
 end)
-
-
 
 local function isCurrentlyGrabbing()
     if workspace:FindFirstChild("GrabParts") then return true end
