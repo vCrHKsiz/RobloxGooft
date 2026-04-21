@@ -5,7 +5,7 @@ local Camera = workspace.CurrentCamera
 local Player = game.Players.LocalPlayer
 
 local Window = OrionLib:MakeWindow({
-    Name = "Finist FOV changer", 
+    Name = "Ragebait", 
     HidePremium = false, 
     SaveConfig = true, 
     ConfigFolder = "FinistUltra"
