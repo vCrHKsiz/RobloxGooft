@@ -13,12 +13,6 @@ local Window = OrionLib:MakeWindow({
 
 local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998"})
 
-local flying = false
-local flySpeed = 50
-local lastSpace = 0
-local bv, bg
-local keysDown = {}
-local rightClickDown = false -- yooooo
 local aimbotEnabled = false
 local aimSmoothness = 5 
 local aimDistance = 100 
@@ -311,114 +305,5 @@ RunService:BindToRenderStep("FinistAimbot", Enum.RenderPriority.Camera.Value + 1
 end)
 
 
-local MoveTab = Window:MakeTab({Name = "Movement", Icon = "rbxassetid://4483345998"})
-
-local function startFlying()
-    local char = Player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    flying = true
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    
-    
-    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false) 
-    hum:ChangeState(Enum.HumanoidStateType.Running)
-
-    
-end
-
-local function stopFlying()
-    flying = false
-    local char = Player.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-        end
-    end
-    if bv then bv:Destroy() end
-    if bg then bg:Destroy() end
-end
-
-MoveTab:AddSlider({
-    Name = "Air Speed",
-    Min = 0, Max = 300, Default = 50, 
-    Increment = 1, ValueName = "Speed",
-    Callback = function(Value) 
-        flySpeed = Value 
-    end    
-})
-
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end 
-    
-    if input.KeyCode == Enum.KeyCode.Space then
-        local currentTime = tick()
-        local timeSinceLastTap = currentTime - lastSpace
-        
-        if timeSinceLastTap < 0.3 then 
-            if flying then 
-                stopFlying() 
-            else 
-                startFlying() 
-            end
-            lastSpace = 0 
-        else
-            lastSpace = currentTime
-        end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-        rightClickDown = true
-    end
-    
-    keysDown[input.KeyCode] = true
-end)
-
-RunService.RenderStepped:Connect(function()
-    if flying and bv and bg and Player.Character then
-        local root = Player.Character:FindFirstChild("HumanoidRootPart")
-        local hum = Player.Character:FindFirstChildOfClass("Humanoid")
-        
-        if root and hum then
-            hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
-            
-            local direction = Vector3.new(0, 0, 0)
-            local camCF = Camera.CFrame
-            
-            
-            if keysDown[Enum.KeyCode.W] then direction = direction + camCF.LookVector end
-            if keysDown[Enum.KeyCode.S] then direction = direction - camCF.LookVector end
-            if keysDown[Enum.KeyCode.A] then direction = direction - camCF.RightVector end
-            if keysDown[Enum.KeyCode.D] then direction = direction + camCF.RightVector end
-            
-            
-            local yVel = 0
-            if keysDown[Enum.KeyCode.Space] then yVel = flySpeed end
-            if keysDown[Enum.KeyCode.LeftControl] then yVel = -flySpeed end
-
-            
-            local flatDir = Vector3.new(direction.X, 0, direction.Z)
-            if flatDir.Magnitude > 0 then
-                flatDir = flatDir.Unit * flySpeed
-            else
-                flatDir = Vector3.new(0,0,0)
-            end
-            
-            
-            bv.Velocity = flatDir + Vector3.new(0, yVel, 0)
-            
-            
-            if rightClickDown then
-                hum.AutoRotate = true 
-                bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-                bg.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z))
-            else
-                hum.AutoRotate = false
-                bg.MaxTorque = Vector3.new(0, 0, 0) 
-            end
-        end
-    end
-end)
 
 OrionLib:Init()
