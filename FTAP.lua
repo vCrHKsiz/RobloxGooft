@@ -350,9 +350,11 @@ end
 
 MoveTab:AddSlider({
     Name = "Air Speed",
-    Min = 10, Max = 300, Default = 50,
+    Min = 0, Max = 300, Default = 50, 
     Increment = 1, ValueName = "Speed",
-    Callback = function(Value) flySpeed = Value end    
+    Callback = function(Value) 
+        flySpeed = Value 
+    end    
 })
 
 -- Inputs
@@ -384,36 +386,41 @@ RunService.RenderStepped:Connect(function()
         local hum = Player.Character:FindFirstChildOfClass("Humanoid")
         
         if root and hum then
-            -- Force "Running" state so legs keep moving
             hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
             
             local direction = Vector3.new(0, 0, 0)
             local camCF = Camera.CFrame
             
-            -- Movement logic
+            -- Horizontal Movement logic
             if keysDown[Enum.KeyCode.W] then direction = direction + camCF.LookVector end
             if keysDown[Enum.KeyCode.S] then direction = direction - camCF.LookVector end
             if keysDown[Enum.KeyCode.A] then direction = direction - camCF.RightVector end
             if keysDown[Enum.KeyCode.D] then direction = direction + camCF.RightVector end
             
+            -- Vertical logic (Uses the same flySpeed variable)
             local yVel = 0
             if keysDown[Enum.KeyCode.Space] then yVel = flySpeed end
             if keysDown[Enum.KeyCode.LeftControl] then yVel = -flySpeed end
 
-            local flatDir = Vector3.new(direction.X, 0, direction.Z).Unit
-            if direction.Magnitude == 0 then flatDir = Vector3.new(0,0,0) end
-            bv.Velocity = (flatDir * flySpeed) + Vector3.new(0, yVel, 0)
+            -- Calculate Flat Velocity
+            local flatDir = Vector3.new(direction.X, 0, direction.Z)
+            if flatDir.Magnitude > 0 then
+                flatDir = flatDir.Unit * flySpeed
+            else
+                flatDir = Vector3.new(0,0,0)
+            end
             
-            -- CAMERA & ROTATION LOCK
+            -- Apply the velocity
+            bv.Velocity = flatDir + Vector3.new(0, yVel, 0)
+            
+            -- Rotation logic
             if rightClickDown then
-                -- When holding Right Click: Follow Camera
                 hum.AutoRotate = true 
                 bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
                 bg.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z))
             else
-                -- When NOT holding Right Click: Free Camera
                 hum.AutoRotate = false
-                bg.MaxTorque = Vector3.new(0, 0, 0) -- Release rotation control
+                bg.MaxTorque = Vector3.new(0, 0, 0) 
             end
         end
     end
