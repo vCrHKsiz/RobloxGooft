@@ -318,34 +318,27 @@ local function startFlying()
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     
     flying = true
-    local root = char.HumanoidRootPart
     local hum = char:FindFirstChildOfClass("Humanoid")
     
+    
+    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false) 
     hum:ChangeState(Enum.HumanoidStateType.Running)
 
-    -- Set up BodyGyro but keep it weak until we right-click
-    bg = Instance.new("BodyGyro", root)
-    bg.P = 9e4
-    bg.MaxTorque = Vector3.new(0, 0, 0) 
-    bg.CFrame = root.CFrame
-
-    -- BodyVelocity for movement
-    bv = Instance.new("BodyVelocity", root)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-
-    OrionLib:MakeNotification({Name = "Air Walk", Content = "Right-Click to Steer | Space/Ctrl for Vertical", Time = 3})
+    
 end
 
 local function stopFlying()
     flying = false
+    local char = Player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
+    end
     if bv then bv:Destroy() end
     if bg then bg:Destroy() end
-    local hum = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
-    if hum then 
-        hum.AutoRotate = true
-        hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
-    end
 end
 
 MoveTab:AddSlider({
@@ -357,29 +350,31 @@ MoveTab:AddSlider({
     end    
 })
 
--- Inputs
+
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
+    if gpe then return end 
+    
     if input.KeyCode == Enum.KeyCode.Space then
-        local now = tick()
-        if now - lastSpace < 0.3 then
-            if flying then stopFlying() else startFlying() end
+        local currentTime = tick()
+        local timeSinceLastTap = currentTime - lastSpace
+        
+        if timeSinceLastTap < 0.3 then 
+            if flying then 
+                stopFlying() 
+            else 
+                startFlying() 
+            end
+            lastSpace = 0 
+        else
+            lastSpace = currentTime
         end
-        lastSpace = now
     elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
         rightClickDown = true
     end
+    
     keysDown[input.KeyCode] = true
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        rightClickDown = false
-    end
-    keysDown[input.KeyCode] = false
-end)
-
--- Main Physics Loop
 RunService.RenderStepped:Connect(function()
     if flying and bv and bg and Player.Character then
         local root = Player.Character:FindFirstChild("HumanoidRootPart")
@@ -391,18 +386,18 @@ RunService.RenderStepped:Connect(function()
             local direction = Vector3.new(0, 0, 0)
             local camCF = Camera.CFrame
             
-            -- Horizontal Movement logic
+            
             if keysDown[Enum.KeyCode.W] then direction = direction + camCF.LookVector end
             if keysDown[Enum.KeyCode.S] then direction = direction - camCF.LookVector end
             if keysDown[Enum.KeyCode.A] then direction = direction - camCF.RightVector end
             if keysDown[Enum.KeyCode.D] then direction = direction + camCF.RightVector end
             
-            -- Vertical logic (Uses the same flySpeed variable)
+            
             local yVel = 0
             if keysDown[Enum.KeyCode.Space] then yVel = flySpeed end
             if keysDown[Enum.KeyCode.LeftControl] then yVel = -flySpeed end
 
-            -- Calculate Flat Velocity
+            
             local flatDir = Vector3.new(direction.X, 0, direction.Z)
             if flatDir.Magnitude > 0 then
                 flatDir = flatDir.Unit * flySpeed
@@ -410,10 +405,10 @@ RunService.RenderStepped:Connect(function()
                 flatDir = Vector3.new(0,0,0)
             end
             
-            -- Apply the velocity
+            
             bv.Velocity = flatDir + Vector3.new(0, yVel, 0)
             
-            -- Rotation logic
+            
             if rightClickDown then
                 hum.AutoRotate = true 
                 bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
