@@ -13,6 +13,12 @@ local Window = OrionLib:MakeWindow({
 
 local MainTab = Window:MakeTab({Name = "Main", Icon = "rbxassetid://4483345998"})
 
+local flying = false
+local flySpeed = 50
+local lastSpace = 0
+local bv, bg
+local keysDown = {}
+local rightClickDown = false -- yooooo
 local aimbotEnabled = false
 local aimSmoothness = 5 
 local aimDistance = 100 
@@ -300,6 +306,115 @@ RunService:BindToRenderStep("FinistAimbot", Enum.RenderPriority.Camera.Value + 1
         if target then
             local lookAt = CFrame.new(Camera.CFrame.Position, target.Position)
             Camera.CFrame = Camera.CFrame:Lerp(lookAt, 1 / math.max(aimSmoothness, 1.1))
+        end
+    end
+end)
+
+
+local MoveTab = Window:MakeTab({Name = "Movement", Icon = "rbxassetid://4483345998"})
+
+local function startFlying()
+    local char = Player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    flying = true
+    local root = char.HumanoidRootPart
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    
+    hum:ChangeState(Enum.HumanoidStateType.Running)
+
+    -- Set up BodyGyro but keep it weak until we right-click
+    bg = Instance.new("BodyGyro", root)
+    bg.P = 9e4
+    bg.MaxTorque = Vector3.new(0, 0, 0) 
+    bg.CFrame = root.CFrame
+
+    -- BodyVelocity for movement
+    bv = Instance.new("BodyVelocity", root)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    OrionLib:MakeNotification({Name = "Air Walk", Content = "Right-Click to Steer | Space/Ctrl for Vertical", Time = 3})
+end
+
+local function stopFlying()
+    flying = false
+    if bv then bv:Destroy() end
+    if bg then bg:Destroy() end
+    local hum = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+    if hum then 
+        hum.AutoRotate = true
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+    end
+end
+
+MoveTab:AddSlider({
+    Name = "Air Speed",
+    Min = 10, Max = 300, Default = 50,
+    Increment = 1, ValueName = "Speed",
+    Callback = function(Value) flySpeed = Value end    
+})
+
+-- Inputs
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.Space then
+        local now = tick()
+        if now - lastSpace < 0.3 then
+            if flying then stopFlying() else startFlying() end
+        end
+        lastSpace = now
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        rightClickDown = true
+    end
+    keysDown[input.KeyCode] = true
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        rightClickDown = false
+    end
+    keysDown[input.KeyCode] = false
+end)
+
+-- Main Physics Loop
+RunService.RenderStepped:Connect(function()
+    if flying and bv and bg and Player.Character then
+        local root = Player.Character:FindFirstChild("HumanoidRootPart")
+        local hum = Player.Character:FindFirstChildOfClass("Humanoid")
+        
+        if root and hum then
+            -- Force "Running" state so legs keep moving
+            hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+            
+            local direction = Vector3.new(0, 0, 0)
+            local camCF = Camera.CFrame
+            
+            -- Movement logic
+            if keysDown[Enum.KeyCode.W] then direction = direction + camCF.LookVector end
+            if keysDown[Enum.KeyCode.S] then direction = direction - camCF.LookVector end
+            if keysDown[Enum.KeyCode.A] then direction = direction - camCF.RightVector end
+            if keysDown[Enum.KeyCode.D] then direction = direction + camCF.RightVector end
+            
+            local yVel = 0
+            if keysDown[Enum.KeyCode.Space] then yVel = flySpeed end
+            if keysDown[Enum.KeyCode.LeftControl] then yVel = -flySpeed end
+
+            local flatDir = Vector3.new(direction.X, 0, direction.Z).Unit
+            if direction.Magnitude == 0 then flatDir = Vector3.new(0,0,0) end
+            bv.Velocity = (flatDir * flySpeed) + Vector3.new(0, yVel, 0)
+            
+            -- CAMERA & ROTATION LOCK
+            if rightClickDown then
+                -- When holding Right Click: Follow Camera
+                hum.AutoRotate = true 
+                bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                bg.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z))
+            else
+                -- When NOT holding Right Click: Free Camera
+                hum.AutoRotate = false
+                bg.MaxTorque = Vector3.new(0, 0, 0) -- Release rotation control
+            end
         end
     end
 end)
