@@ -100,11 +100,13 @@ MainTab:AddBind({
 	end    
 })
 
-MainTab:AddToggle({
+MainTab:AddBind({
    Name = "Massless Grab (PLAYER & OBJECT)",
-   Default = false,
-   Callback = function(v)
-       if v then
+   Default = Enum.KeyCode.F,
+   Hold = false,
+   Callback = function()
+       local enabled = Massless == nil
+       if enabled then
            Massless = workspace.ChildAdded:Connect(function(r)
                if r.Name == "GrabParts" then
                    while workspace:FindFirstChild("GrabParts") do
@@ -123,6 +125,13 @@ MainTab:AddToggle({
        else
            if Massless then Massless:Disconnect() Massless = nil end
        end
+
+       OrionLib:MakeNotification({
+           Name = "Massless Grab",
+           Content = enabled and "Enabled" or "Disabled",
+           Image = "rbxassetid://4483345998",
+           Time = 2
+       })
    end,
 })
 
@@ -303,7 +312,5 @@ RunService:BindToRenderStep("FinistAimbot", Enum.RenderPriority.Camera.Value + 1
         end
     end
 end)
-
-
 
 OrionLib:Init()
